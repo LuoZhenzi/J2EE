@@ -1,0 +1,9 @@
+<component name="ArtifactManager">
+  <artifact type="war" build-on-make="true" name="UseSC:war">
+    <output-path>$PROJECT_DIR$/out/artifacts/UseSC_war</output-path>
+    <root id="archive" name="UseSC.war">
+      <element id="artifact" artifact-name="UseSC:war exploded" />
+      <element id="library" level="project" name="simple-controller" />
+    </root>
+  </artifact>
+</component>

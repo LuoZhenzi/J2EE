@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="cglib:cglib:3.2.5" type="repository">
+    <properties maven-id="cglib:cglib:3.2.5" />
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/lib/cglib-3.2.5.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/asm-5.2.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/ant-1.9.6.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/ant-launcher-1.9.6.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

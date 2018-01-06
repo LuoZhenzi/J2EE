@@ -1,12 +1,13 @@
 package sc.ustc.controller;
 
-import org.w3c.dom.*;
-import org.xml.sax.SAXException;
+import net.sf.cglib.proxy.*;
+import org.dom4j.*;
+import org.dom4j.io.SAXReader;
 import javax.servlet.ServletException;
 import javax.servlet.http.*;
 import java.io.*;
 import java.lang.reflect.*;
-import javax.xml.parsers.*;
+import java.util.List;
 
 public class SimpleController extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
@@ -15,77 +16,91 @@ public class SimpleController extends HttpServlet {
         int i, j, k;
         String path1 = request.getServletPath();
         String path2 = path1.substring(path1.indexOf("/")+1, path1.lastIndexOf("."));
-        DocumentBuilderFactory a = DocumentBuilderFactory.newInstance();
+        SAXReader sax = new SAXReader();
+        File cXml = new File(getServletContext().getRealPath("/WEB-INF/classes/controller.xml"));
         try {
-            DocumentBuilder b = a.newDocumentBuilder();
-            Document document = b.parse(getServletContext().getRealPath("/WEB-INF/classes/controller.xml"));
-            NodeList actionList = document.getElementsByTagName("action");
+            Document document = sax.read(cXml);
+            Element root = document.getRootElement();
+            List<Element> actionList = root.element("controller").elements("action");
             Element action;
             String actionName;
-            for (i = 0; i < actionList.getLength(); i++) {
-                action = (Element) actionList.item(i);
-                actionName = action.getAttribute("name");
+            for (i = 0; i < actionList.size(); i++) {
+                action = actionList.get(i);
+                actionName = action.attributeValue("name");
                 if (actionName.equals(path2)) {
-                    Element interceptorRef = (Element) action.getElementsByTagName("interceptor-ref").item(0);
+                    Element interceptorRef = action.element("interceptor-ref");
                     Element interceptor;
                     Class interceptorClass;
                     Object interceptorObject = null;
                     Method interceptorPreDo = null;
                     Method interceptorAfterDo = null;
                     if (interceptorRef != null) {
-                        NodeList interceptorList = document.getElementsByTagName("interceptor");
-                        for (k = 0; k < interceptorList.getLength(); k++) {
-                            interceptor = (Element) interceptorList.item(k);
-                            if (interceptor.getAttribute("name").equals(interceptorRef.getAttribute("name"))) {
-                                interceptorClass = Class.forName(interceptor.getAttribute("class"));
+                        List<Element> interceptorList = root.elements("interceptor");
+                        for (k = 0; k < interceptorList.size(); k++) {
+                            interceptor = interceptorList.get(k);
+                            if (interceptor.attributeValue("name").equals(interceptorRef.attributeValue("name"))) {
+                                interceptorClass = Class.forName(interceptor.attributeValue("class"));
                                 interceptorObject = interceptorClass.newInstance();
-                                interceptorPreDo = interceptorClass.getMethod(interceptor.getAttribute("predo"), String.class);
-                                interceptorAfterDo = interceptorClass.getMethod(interceptor.getAttribute("afterdo"), String.class);
+                                interceptorPreDo = interceptorClass.getMethod(interceptor.attributeValue("predo"), String.class);
+                                interceptorAfterDo = interceptorClass.getMethod(interceptor.attributeValue("afterdo"), String.class);
                                 break;
                             }
                         }
                     }
-                    if (interceptorPreDo != null) {
-                        interceptorPreDo.invoke(interceptorObject, actionName);
-                    }
-                    Class actionClass = Class.forName(action.getAttribute("class"));
+                    Class actionClass = Class.forName(action.attributeValue("class"));
                     Object actionObject = actionClass.newInstance();
-                    Method actionMethod = actionClass.getMethod(action.getAttribute("method"));
-                    String actionResult = (String) actionMethod.invoke(actionObject, new Object[]{});
-                    NodeList resultList = action.getElementsByTagName("result");
-                    for (j = 0; j < resultList.getLength(); j++) {
-                        Element result = (Element) resultList.item(j);
-                        if (result.getAttribute("name").equals(actionResult)) {
-                            if (result.getAttribute("type").equals("forward")) {
-                                request.getRequestDispatcher(result.getAttribute("value")).forward(request, response);
+                    Method actionMethod = actionClass.getMethod(action.attributeValue("method"));
+                    Method finalInterceptorPreDo = interceptorPreDo;
+                    Object finalInterceptorObject = interceptorObject;
+                    String finalActionName = actionName;
+                    Method finalInterceptorAfterDo = interceptorAfterDo;
+                    class TargetInterceptor implements MethodInterceptor {
+                        public String intercept(Object object, Method method, Object[] params, MethodProxy proxy) throws Throwable {
+                            if (finalInterceptorPreDo != null) {
+                                finalInterceptorPreDo.invoke(finalInterceptorObject, finalActionName);
                             }
-                            if (result.getAttribute("type").equals("redirect")) {
-                                response.sendRedirect(result.getAttribute("value"));
+                            String actionResult = (String) proxy.invokeSuper(object, params);
+                            if (finalInterceptorAfterDo != null) {
+                                finalInterceptorAfterDo.invoke(finalInterceptorObject, actionResult);
+                            }
+                            return actionResult;
+                        }
+                    }
+                    Enhancer enhancer =new Enhancer();
+                    enhancer.setSuperclass(actionObject.getClass());
+                    enhancer.setCallback(new TargetInterceptor());
+                    Object actionProxy = enhancer.create();
+                    String actionResult = (String) actionMethod.invoke(actionProxy, new Object[]{});
+                    //String actionResult = (String) actionMethod.invoke(actionObject, new Object[]{});
+                    List<Element> resultList = action.elements("result");
+                    for (j = 0; j < resultList.size(); j++) {
+                        Element result = resultList.get(j);
+                        if (result.attributeValue("name").equals(actionResult)) {
+                            if (result.attributeValue("type").equals("forward")) {
+                                request.getRequestDispatcher(result.attributeValue("value")).forward(request, response);
+                            }
+                            if (result.attributeValue("type").equals("redirect")) {
+                                response.sendRedirect(result.attributeValue("value"));
                             }
                             break;
                         }
                     }
-                    if (j >= resultList.getLength()) {
+                    if (j >= resultList.size()) {
                         pw.print("<html><head><title></title><head><body>没有请求的资源。</body></html>");
-                    }
-                    if (interceptorAfterDo != null) {
-                        interceptorAfterDo.invoke(interceptorObject, actionResult);
                     }
                     break;
                 }
             }
-            if (i >= actionList.getLength()) {
+            if (i >= actionList.size()) {
                 pw.print("<html><head><title></title><head><body>不可识别的 action 请求。</body></html>");
             }
-        } catch (ParserConfigurationException e) {
+        } catch (DocumentException e) {
             e.printStackTrace();
-        } catch (SAXException e) {
+        } catch (ClassNotFoundException e) {
             e.printStackTrace();
         } catch (IllegalAccessException e) {
             e.printStackTrace();
         } catch (InstantiationException e) {
-            e.printStackTrace();
-        } catch (ClassNotFoundException e) {
             e.printStackTrace();
         } catch (NoSuchMethodException e) {
             e.printStackTrace();

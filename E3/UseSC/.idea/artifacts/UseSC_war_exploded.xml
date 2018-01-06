@@ -1,5 +1,5 @@
 <component name="ArtifactManager">
-  <artifact type="exploded-war" name="UseSC:war exploded">
+  <artifact type="exploded-war" build-on-make="true" name="UseSC:war exploded">
     <output-path>$PROJECT_DIR$/out/artifacts/UseSC_war_exploded</output-path>
     <root id="root">
       <element id="directory" name="WEB-INF">
@@ -8,10 +8,11 @@
         </element>
         <element id="directory" name="lib">
           <element id="library" level="project" name="dom4j-2.1.0" />
-          <element id="library" level="project" name="SimpleController_jar" />
         </element>
       </element>
       <element id="javaee-facet-resources" facet="UseSC/web/Web" />
+      <element id="library" level="project" name="dom4j-2.1.0" />
+      <element id="library" level="project" name="simple-controller" />
     </root>
   </artifact>
 </component>

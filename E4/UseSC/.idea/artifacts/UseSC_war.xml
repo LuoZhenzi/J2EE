@@ -4,7 +4,7 @@
     <root id="archive" name="UseSC.war">
       <element id="artifact" artifact-name="UseSC:war exploded" />
       <element id="library" level="project" name="dom4j-2.1.0" />
-      <element id="library" level="project" name="SimpleController_jar" />
+      <element id="library" level="project" name="simple-controller" />
     </root>
   </artifact>
 </component>

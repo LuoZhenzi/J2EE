@@ -1,0 +1,26 @@
+<view>
+    <header>
+        <title>Success View</title>
+    </header>
+    <body>
+        <form>
+            <name>logoutForm</name>
+            <action>login.jsp</action>
+            <method>post</method>
+            <textView>
+                <name>userName</name>
+                <label>Login Name:</label>
+                <value>sa517237</value>
+            </textView>
+            <textView>
+                <name>userAge</name>
+                <label>Age:</label>
+                <value>23</value>
+            </textView>>
+            <buttonView>
+                <name>logoutButton</name>
+                <method>Logout</method>
+            </buttonView>
+        </form>
+    </body>
+</view>
